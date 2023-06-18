@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Piston : MonoBehaviour
@@ -9,11 +10,13 @@ public class Piston : MonoBehaviour
     public Transform bodyTr;
     public Rigidbody2D bodyRb;
     public BoxCollider2D bodyCol;
+    public FixedJoint2D initialJoint;
     public Transform armTr;
     public Rigidbody2D armRb;
     public BoxCollider2D armCol;
 
-    private FixedJoint2D currentArmBodyJoint;
+    //dynamic
+    private Joint2D currentJoint;
 
     //extending
     private readonly float extendDuration = .125f;
@@ -34,7 +37,7 @@ public class Piston : MonoBehaviour
     private void Awake()
     {
         Physics2D.IgnoreCollision(bodyCol, armCol);
-        LinkBodyAndArm(true);
+        currentJoint = initialJoint;
     }
 
     private void Update()
@@ -55,21 +58,29 @@ public class Piston : MonoBehaviour
     }
 
     //helper methods:
-    private void LinkBodyAndArm(bool link)
+    private void SwitchJoints(bool unlock)
     {
-        if (link)
+        Joint2D newJoint;
+
+        if (unlock)
         {
-            currentArmBodyJoint = body.AddComponent<FixedJoint2D>();
-            currentArmBodyJoint.connectedBody = armRb;
+            SliderJoint2D slider = body.AddComponent<SliderJoint2D>();
+            slider.autoConfigureAngle = false;
+            slider.angle = 90;
+            newJoint = slider;
         }
         else
-            Destroy(currentArmBodyJoint);
+            newJoint = body.AddComponent<FixedJoint2D>();
+
+        newJoint.connectedBody = armRb;
+        Destroy(currentJoint);
+        currentJoint = newJoint;
     }
 
     //main methods:
     private IEnumerator Extend()
     {
-        LinkBodyAndArm(false);
+        SwitchJoints(true);
         armRb.mass = 1000;
         extendTimeElapsed = 0;
         extending = true;
@@ -77,9 +88,10 @@ public class Piston : MonoBehaviour
         yield return new WaitForSeconds(extendDuration);
 
         extending = false;
-        armRb.mass = .5f; //default value
+        armRb.mass = 1; //more mass when extended
+        bodyRb.mass = 1; //^
         armTr.SetPositionAndRotation(bodyTr.position + (1 * bodyTr.up), bodyTr.rotation);
-        LinkBodyAndArm(true);
+        SwitchJoints(false);
     }
     private void ExtendUpdate() //run in fixedupdate
     {
@@ -94,7 +106,7 @@ public class Piston : MonoBehaviour
 
     private IEnumerator Retract()
     {
-        LinkBodyAndArm(false);
+        SwitchJoints(true);
         armRb.mass = 1000;
         retractTimeElapsed = 0;
         retracting = true;
@@ -102,9 +114,10 @@ public class Piston : MonoBehaviour
         yield return new WaitForSeconds(retractDuration);
 
         retracting = false;
-        armRb.mass = .5f; //default value
+        armRb.mass = .5f; //less mass when not extended
+        bodyRb.mass = .5f; //^
         armTr.SetPositionAndRotation(bodyTr.position, bodyTr.rotation);
-        LinkBodyAndArm(true);
+        SwitchJoints(false);
     }
     private void RetractUpdate() //run in fixedupdate
     {
@@ -119,7 +132,7 @@ public class Piston : MonoBehaviour
 
     private IEnumerator Grapple()
     {
-        LinkBodyAndArm(false);
+        SwitchJoints(true);
         bodyRb.mass = 1000;
         grappleTimeElapsed = 0;
         grappling = true;
@@ -127,9 +140,10 @@ public class Piston : MonoBehaviour
         yield return new WaitForSeconds(grappleDuration);
 
         grappling = false;
-        bodyRb.mass = .5f; //default value
+        armRb.mass = .5f; //less mass when not extended
+        bodyRb.mass = .5f; //^
         bodyTr.SetPositionAndRotation(armTr.position, armTr.rotation);
-        LinkBodyAndArm(true);
+        SwitchJoints(false);
     }
     private void GrappleUpdate() //run in fixedupdate
     {

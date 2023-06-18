@@ -50,6 +50,7 @@ MonoBehaviour:
   bodyTr: {fileID: 1503944917616786580}
   bodyRb: {fileID: 1503944917616786585}
   bodyCol: {fileID: 1503944917616786586}
+  initialJoint: {fileID: 465789833}
   armTr: {fileID: 1503944918867787427}
   armRb: {fileID: 1503944918867787424}
   armCol: {fileID: 1503944918867787425}
@@ -65,6 +66,7 @@ GameObject:
   - component: {fileID: 1503944917616786587}
   - component: {fileID: 1503944917616786585}
   - component: {fileID: 1503944917616786586}
+  - component: {fileID: 465789833}
   m_Layer: 0
   m_Name: Body
   m_TagString: Untagged
@@ -186,6 +188,24 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!255 &465789833
+FixedJoint2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1503944917616786581}
+  m_Enabled: 1
+  serializedVersion: 4
+  m_EnableCollision: 0
+  m_ConnectedRigidBody: {fileID: 1503944918867787424}
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0, y: 0}
+  m_ConnectedAnchor: {x: 0, y: 0}
+  m_DampingRatio: 0
+  m_Frequency: 0
 --- !u!1 &1503944918867787420
 GameObject:
   m_ObjectHideFlags: 0

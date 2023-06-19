@@ -9,6 +9,7 @@ public class Block : MonoBehaviour
 
     [NonSerialized] public List<Block> connectedBlocks = new();
     private int checkingBlocks;
+
     private void Awake()
     {
         gridIndex = GameObject.FindWithTag("MiscScripts").GetComponent<GridIndex>();
@@ -17,17 +18,7 @@ public class Block : MonoBehaviour
     private void Start()
     {
         gridIndex.ChangeIndexPosition(default, transform.position, this);
-
-        if (name == "Block")
-            GetNearbyBlocks(this);
     }
-
-    private void Test()
-    {
-        Debug.Log(connectedBlocks.Count);
-    }
-
-
 
     public bool ContainsConnectedBlock(Block newBlock) //true if block is already in connectedBlocks
     {
@@ -59,40 +50,25 @@ public class Block : MonoBehaviour
             Block neighbor = gridIndex.GetBlockFromIndex(vector2);
             if (neighbor != null && !original.ContainsConnectedBlock(neighbor))
             {
-                original.ChangeCheckingBlocks(1); //add one before calling GetNearbyBlocks in neighbor
+                original.ChangeCheckingBlocks(1, name); //add one before calling GetNearbyBlocks in neighbor
 
                 original.connectedBlocks.Add(neighbor);
                 neighbor.GetNearbyBlocks(original);
             }
         }
-        original.ChangeCheckingBlocks(-1);
+        original.ChangeCheckingBlocks(-1, name);
     }
-    public void ChangeCheckingBlocks(int amount) //change name, add comments
+    public void ChangeCheckingBlocks(int amount, string name) //change name, add comments
     {
         checkingBlocks += amount;
 
         if (checkingBlocks == 0)
-            Test();
+            Debug.Log("finished checking!");
     }
 
-
-    private void MoveBlock() //run in update
+    private void MoveBlock()
     {
-        if (name == "Block") return;
-
         Vector2 targetMovePosition = transform.position;
-
-        if (Input.GetKeyDown(KeyCode.W))
-            targetMovePosition += (Vector2)transform.up * 1;
-        else if (Input.GetKeyDown(KeyCode.S))
-            targetMovePosition += (Vector2)transform.up * -1;
-        else if (Input.GetKeyDown(KeyCode.A))
-            targetMovePosition += (Vector2)transform.right * -1;
-        else if (Input.GetKeyDown(KeyCode.D))
-            targetMovePosition += (Vector2)transform.right * 1;
-
-        if (targetMovePosition == (Vector2)transform.position)
-            return;
 
         if (gridIndex.GetBlockFromIndex(targetMovePosition) == null)
         {
@@ -100,4 +76,9 @@ public class Block : MonoBehaviour
             transform.position = targetMovePosition;
         }
     }
+}
+public class BlockFastener
+{
+    public Block block1;
+    public Block block2;
 }

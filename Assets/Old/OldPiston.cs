@@ -1,9 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
 
-public class Piston : MonoBehaviour
+public class OldPiston : MonoBehaviour
 {
     //assigned in prefab
     public GameObject body;

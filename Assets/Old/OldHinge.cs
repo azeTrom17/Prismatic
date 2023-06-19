@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Hinge : MonoBehaviour
+public class OldHinge : MonoBehaviour
 {
     //assigned in prefab
     public Transform bodyTr;

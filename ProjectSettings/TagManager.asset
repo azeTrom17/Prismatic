@@ -42,3 +42,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Fastener
+    uniqueID: 3311410729
+    locked: 0
+  - name: ClickZone
+    uniqueID: 1500836511
+    locked: 0

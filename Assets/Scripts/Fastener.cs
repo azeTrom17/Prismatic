@@ -2,17 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Fastener : MonoBehaviour
+public class Fastener : Gadget
 {
-    // Start is called before the first frame update
-    void Start()
+    public override void ActivateGadget(int mouseButton)
     {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }

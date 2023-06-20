@@ -5,22 +5,33 @@ using UnityEngine;
 
 public class Block : MonoBehaviour
 {
-    private GridIndex gridIndex;
+    //4 steps:
+    //1. At game start, get all connected blocks and fasten them. (what's the original?)
+    //2. When piston/hinge demands it, blocks must get all connected and fastened blocks
+    //3. Then, those blocks must check to see if they can move to the target position
+    //4. Finally, if the blocks can move, they lerp to the position. Else, error
+
+
+
+
+    protected GridIndex gridIndex;
+    protected ObjectPool objectPool;
 
     [NonSerialized] public List<Block> connectedBlocks = new();
     private int checkingBlocks;
 
-    private void Awake()
+    protected void Awake()
     {
         gridIndex = GameObject.FindWithTag("MiscScripts").GetComponent<GridIndex>();
+        objectPool = GameObject.FindWithTag("MiscScripts").GetComponent<ObjectPool>();
     }
 
-    private void Start()
+    protected void Start()
     {
         gridIndex.ChangeIndexPosition(default, transform.position, this);
     }
 
-    public bool ContainsConnectedBlock(Block newBlock) //true if block is already in connectedBlocks
+    public bool ContainsConnectedBlock(Block newBlock) //called by other Blocks
     {
         foreach (Block block in connectedBlocks)
             if (block == newBlock)
@@ -50,15 +61,15 @@ public class Block : MonoBehaviour
             Block neighbor = gridIndex.GetBlockFromIndex(vector2);
             if (neighbor != null && !original.ContainsConnectedBlock(neighbor))
             {
-                original.ChangeCheckingBlocks(1, name); //add one before calling GetNearbyBlocks in neighbor
+                original.ChangeCheckingBlocks(1); //add one before calling GetNearbyBlocks in neighbor
 
                 original.connectedBlocks.Add(neighbor);
                 neighbor.GetNearbyBlocks(original);
             }
         }
-        original.ChangeCheckingBlocks(-1, name);
+        original.ChangeCheckingBlocks(-1);
     }
-    public void ChangeCheckingBlocks(int amount, string name) //change name, add comments
+    public void ChangeCheckingBlocks(int amount) //change name, add comments
     {
         checkingBlocks += amount;
 
@@ -75,6 +86,13 @@ public class Block : MonoBehaviour
             gridIndex.ChangeIndexPosition(transform.position, targetMovePosition, this);
             transform.position = targetMovePosition;
         }
+    }
+
+    public void DestroyBlock() //called by Bomb
+    {
+        //destroy fasteners
+        //if piston, destroy both arm and body
+        Destroy(gameObject);
     }
 }
 public class BlockFastener

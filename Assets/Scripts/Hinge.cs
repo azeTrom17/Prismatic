@@ -2,17 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Hinge : MonoBehaviour
+public class Hinge : Gadget
 {
-    // Start is called before the first frame update
-    void Start()
+    //assigned in prefab
+    public string hingeType; //"clockwise" or "counterclockwise"
+
+    //dynamic
+    private int stroke; //1 or 2. Stroke 1 matches hingeType, 2 is opposite
+
+    public override void ActivateGadget(int mouseButton)
     {
-        
+
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+
+    //error if target is fastened to the hinge elsewhere
 }

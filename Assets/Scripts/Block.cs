@@ -192,16 +192,16 @@ public class Block : MonoBehaviour
     //        Debug.Log("finished checking!");
     //}
 
-    //private void MoveBlock()
-    //{
-    //    Vector2 targetMovePosition = transform.position;
+    private void MoveBlock()
+    {
+        Vector2 targetMovePosition = transform.position + transform.up * -1;
 
-    //    if (gridIndex.GetBlockFromIndex(targetMovePosition) == null)
-    //    {
-    //        gridIndex.ChangeIndexPosition(transform.position, targetMovePosition, this);
-    //        transform.position = targetMovePosition;
-    //    }
-    //}
+        if (gridIndex.GetBlockFromIndex(targetMovePosition) == null)
+        {
+            gridIndex.ChangeIndexPosition(transform.position, targetMovePosition, this);
+            transform.position = targetMovePosition;
+        }
+    }
 
     public void DestroyBlock() //called by Bomb
     {

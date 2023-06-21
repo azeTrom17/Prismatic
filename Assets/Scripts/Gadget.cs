@@ -26,7 +26,7 @@ public abstract class Gadget : Block, IPointerDownHandler
 
     public abstract void ActivateGadget(int mouseButton);
 
-    public void Update()
+    protected virtual void Update()
     {
         mousePosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
 

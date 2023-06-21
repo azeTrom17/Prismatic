@@ -4,31 +4,32 @@ using UnityEngine;
 
 public class ObjectPool : MonoBehaviour
 {
-    private readonly List<GameObject> pooledFasteners = new();
+    private readonly List<GameObject> pooledFastenerIcons = new();
 
     private readonly int amountToPool = 200;
 
     //assigned in scene:
     public GameObject objectToPool;
-    public Transform poolParent;
+    public Transform poolParent; //read by Block
 
-    private void Start()
+    private void Awake()
     {
         GameObject tmp;
         for (int i = 0; i < amountToPool; i++)
         {
             tmp = Instantiate(objectToPool, poolParent);
             tmp.SetActive(false);
-            pooledFasteners.Add(tmp);
+            //must populate pooledFasteners before Block calls GetPooledFastener at Start
+            pooledFastenerIcons.Add(tmp);
         }
     }
 
     public GameObject GetPooledFastener()
     {
-        for (int i = 0; i < amountToPool; i++)
+        foreach (GameObject fastenerIcon in pooledFastenerIcons)
         {
-            if (!pooledFasteners[i].activeSelf)
-                return pooledFasteners[i];
+            if (!fastenerIcon.activeSelf)
+                return fastenerIcon;
         }
         Debug.LogError("No available objects in pool");
         return default;

@@ -14,27 +14,19 @@ public class Fastener : Gadget
             RightActivation();
     }
 
-    private Block GetTargetBlock()
-    {
-        Vector2 targetPosition = transform.position + transform.up * 1;
-        return gridIndex.GetBlockFromIndex(targetPosition);
-    }
-
     private void LeftActivation() //left click
     {
         Block targetBlock = GetTargetBlock();
         if (targetBlock == null) return;
 
-        Block[] blocks = OrganizedBlocks(this, targetBlock);
-        Block higherBlock = blocks[0]; //higherBlock = block with higher blockNuumber
-        Block lowerBlock = blocks[1];
+        Block[] blocks = OrganizedBlocks(this, targetBlock); //organize by blockNumber, lowest first
 
-        string key = GetFastenerKey(higherBlock, lowerBlock);
+        string key = GetFastenerKey(blocks[0], blocks[1]);
 
         if (fasteners.ContainsKey(key))
             DestroyFastener(key);
         else
-            CreateFastener(key, higherBlock, lowerBlock);
+            CreateFastener(key, blocks[0], blocks[1], true);
     }
 
     private void RightActivation() //right click
@@ -49,7 +41,7 @@ public class Fastener : Gadget
     protected override void Update()
     {
         base.Update();
-
+        
         if (!waitingForTarget) return;
 
         Block block = GetTargetBlock();

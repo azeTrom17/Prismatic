@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.RuleTile.TilingRuleOutput;
+using static UnityEngine.UI.Image;
 
 public class Block : MonoBehaviour
 {
@@ -36,9 +38,9 @@ public class Block : MonoBehaviour
         objectPool = GameObject.FindWithTag("MiscScripts").GetComponent<ObjectPool>();
     }
 
-    protected void Start()
+    protected virtual void Start()
     {
-        gridIndex.ChangeIndexPosition(default, transform.position, this);
+        gridIndex.AddToIndex(this);
 
         blockNumber = nextAvailableBlockNumber;
         nextAvailableBlockNumber++;
@@ -47,10 +49,11 @@ public class Block : MonoBehaviour
     }
 
     //helper methods:
-    private List<Block> GetNearbyBlocks() //returns the 4 adjacent blocks (some may be null)
+    protected List<Block> GetNearbyBlocks() //returns the 4 adjacent blocks (some may be null). Used by pistons
     {
         List<Vector2> nearbyPositions = new()
         {
+            //place up block first in list so that pistons can easily remove it
             transform.position + transform.up * 1,
             transform.position + transform.up * -1,
             transform.position + transform.right * 1,
@@ -77,12 +80,16 @@ public class Block : MonoBehaviour
         return block1.blockNumber + "x" + block2.blockNumber;
     }
 
-    protected void CreateFastener(string key, Block lowerBlock, Block higherBlock)
+    protected void CreateFastener(string key, Block lowerBlock, Block higherBlock, bool createIcon)
     {
-        GameObject fastenerIcon = objectPool.GetPooledFastener();
-        fastenerIcon.transform.SetParent(transform);
-        fastenerIcon.transform.position = (lowerBlock.transform.position + higherBlock.transform.position) / 2; //midpoint
-        fastenerIcon.SetActive(true);
+        GameObject fastenerIcon = null;
+        if (createIcon) //piston bodies are fastened to arms but don't have icons
+        {
+            fastenerIcon = objectPool.GetPooledFastener();
+            fastenerIcon.transform.SetParent(transform);
+            fastenerIcon.transform.position = (lowerBlock.transform.position + higherBlock.transform.position) / 2; //midpoint
+            fastenerIcon.SetActive(true);
+        }
 
         BlockFastener blockFastener = new()
         {
@@ -98,109 +105,69 @@ public class Block : MonoBehaviour
     {
         //return fastenerIcon to pool
         GameObject fastenerIcon = fasteners[key].fastenerIcon;
-        fastenerIcon.transform.SetParent(objectPool.poolParent);
-        fastenerIcon.SetActive(false);
+        if (fastenerIcon != null) //piston bodies are fastened to arms but don't have icons
+        {
+            fastenerIcon.transform.SetParent(objectPool.poolParent);
+            fastenerIcon.SetActive(false);
+        }
 
         //destroy fastener
         fasteners.Remove(key);
     }
 
     //misc methods:
-    private void FastenNearbyBlocks()
+    public void FastenNearbyBlocks()
     {
         foreach (Block neighbor in GetNearbyBlocks())
         {
             if (neighbor == null) continue;
 
-            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber
-            Block lowerBlock = blocks[0]; //block with lower blockNumber
-            Block higherBlock = blocks[1];
+            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber, lowest first
 
-            string key = GetFastenerKey(lowerBlock, higherBlock);
+            string key = GetFastenerKey(blocks[0], blocks[1]);
 
             if (fasteners.ContainsKey(key)) continue;
 
-            CreateFastener(key, lowerBlock, higherBlock);
+            CreateFastener(key, blocks[0], blocks[1], true);
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //public bool ContainsConnectedBlock(Block newBlock) //called by other Blocks
-    //{
-    //    foreach (Block block in connectedBlocks)
-    //        if (block == newBlock)
-    //            return true;
-    //    return false;
-    //}
-
-    //public void GetNearbyBlocks(Block original)
-    //{
-    //    if (original == this)
-    //    {
-    //        checkingBlocks = 1;
-    //        connectedBlocks.Clear();
-    //        connectedBlocks.Add(this);
-    //    }
-
-    //    List<Vector2> nearbyPositions = new()
-    //    {
-    //        transform.position + transform.up * 1,
-    //        transform.position + transform.up * -1,
-    //        transform.position + transform.right * 1,
-    //        transform.position + transform.right * -1
-    //    };
-
-    //    foreach (Vector2 vector2 in nearbyPositions)
-    //    {
-    //        Block neighbor = gridIndex.GetBlockFromIndex(vector2);
-    //        if (neighbor != null && !original.ContainsConnectedBlock(neighbor))
-    //        {
-    //            original.ChangeCheckingBlocks(1); //add one before calling GetNearbyBlocks in neighbor
-
-    //            original.connectedBlocks.Add(neighbor);
-    //            neighbor.GetNearbyBlocks(original);
-    //        }
-    //    }
-    //    original.ChangeCheckingBlocks(-1);
-    //}
-    //public void ChangeCheckingBlocks(int amount) //change name, add comments
-    //{
-    //    checkingBlocks += amount;
-
-    //    if (checkingBlocks == 0)
-    //        Debug.Log("finished checking!");
-    //}
-
-    private void MoveBlock()
+    public void GetMovingBlocks(Piston piston) //used only by pistons
     {
-        Vector2 targetMovePosition = transform.position + transform.up * -1;
+        //if there's a wall in the direction of piston's transform.up, tell piston error and return
 
-        if (gridIndex.GetBlockFromIndex(targetMovePosition) == null)
+        List<Block> neighbors = GetNearbyBlocks();
+        foreach (Block neighbor in neighbors)
         {
-            gridIndex.ChangeIndexPosition(transform.position, targetMovePosition, this);
-            transform.position = targetMovePosition;
+            if (neighbor == null) continue;
+
+            if (piston.ContainsMovingBlock(neighbor)) continue;
+
+            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber, lowest first
+            string key = GetFastenerKey(blocks[0], blocks[1]);
+            bool neighborIsFastened = fasteners.ContainsKey(key);
+
+            Vector2 neighborDirection = (neighbor.transform.position - transform.position).normalized;
+            bool neighborIsInFront = neighborDirection == (Vector2)piston.transform.up;
+
+            if (!neighborIsFastened && !neighborIsInFront) continue; //neighbor must be either fastened or in front
+
+            //check this last. If any of the above checks fail, no need to cause an error
+            if (neighbor == piston.errorBlock)
+            {
+                piston.error = true;
+                piston.checkingBlocks -= 1;
+                piston.Move();
+                return;
+            }
+
+            piston.checkingBlocks += 1;
+            piston.movingBlocks.Add(neighbor);
+            neighbor.GetMovingBlocks(piston);
         }
+
+        piston.checkingBlocks -= 1;
+        piston.Move(); //will fail to move if checkingBlocks is not yet 0
     }
 
     public void DestroyBlock() //called by Bomb
@@ -209,7 +176,7 @@ public class Block : MonoBehaviour
         {
             if (neighbor == null) continue;
 
-            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber
+            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber, lowest first
             string key = GetFastenerKey(blocks[0], blocks[1]);
             if (fasteners.ContainsKey(key))
                 DestroyFastener(key);

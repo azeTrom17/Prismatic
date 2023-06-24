@@ -6,23 +6,26 @@ public class GridIndex : MonoBehaviour
 {
     private readonly Dictionary<string, Block> gridIndex = new();
 
-    private string GetKey(Vector2 position)
+    private string GetIndexKey(Vector2 position)
     {
-        return position.x.ToString() + "x" + position.y.ToString();
+        int xPos = Mathf.RoundToInt(position.x); //must round to prevent errors
+        int yPos = Mathf.RoundToInt(position.y); //(positions are sometimes millimeters off)
+        return xPos + "x" + yPos;
     }
 
-    public void ChangeIndexPosition(Vector2 oldPosition, Vector2 newPosition, Block newBlock) //used by block
+    public void AddToIndex(Block block)
     {
-        string oldKey = GetKey(oldPosition);
-        if (gridIndex.ContainsKey(oldKey))
-            gridIndex.Remove(oldKey);
-
-        gridIndex.Add(GetKey(newPosition), newBlock);
+        gridIndex.Add(GetIndexKey(block.transform.position), block);
+    }
+    
+    public void RemoveFromIndex(Block block)
+    {
+        gridIndex.Remove(GetIndexKey(block.transform.position));
     }
 
-    public Block GetBlockFromIndex(Vector2 position) //used by block
+    public Block GetBlockFromIndex(Vector2 position)
     {
-        string key = GetKey(position);
+        string key = GetIndexKey(position);
         if (gridIndex.ContainsKey(key))
             return gridIndex[key];
         else

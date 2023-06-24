@@ -36,4 +36,11 @@ public abstract class Gadget : Block, IPointerDownHandler
         if (dragging)
             clickZone.transform.position = mousePosition - dragOffset;
     }
+
+    protected Block GetTargetBlock() //helper method for fasteners/pistons/hinges
+    {
+        Vector2 targetPosition = transform.position + (transform.up * 1);
+
+        return gridIndex.GetBlockFromIndex(targetPosition);
+    }
 }

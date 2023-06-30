@@ -17,16 +17,22 @@ public class Fastener : Gadget
     private void LeftActivation() //left click
     {
         Block targetBlock = GetTargetBlock();
+
         if (targetBlock == null) return;
 
-        Block[] blocks = OrganizedBlocks(this, targetBlock); //organize by blockNumber, lowest first
+        //if target is the side of a piston arm, (and not the end) return
+        if (targetBlock.CompareTag("PistonArm"))
+        {
+            Vector2 position = targetBlock.transform.position + targetBlock.transform.up * 1;
+            if (gridIndex.GetBlockFromIndex(position) != this)
+                return;
+        }
 
-        string key = GetFastenerKey(blocks[0], blocks[1]);
-
+        string key = GetFastenerKey(this, targetBlock);
         if (fasteners.ContainsKey(key))
             DestroyFastener(key);
         else
-            CreateFastener(key, blocks[0], blocks[1], true);
+            CreateFastener(key, this, targetBlock, true);
     }
 
     private void RightActivation() //right click

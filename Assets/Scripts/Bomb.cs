@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Bomb : Gadget
 {
+    //ADD BOMB RIGHT CLICK
+
     private readonly List<Block> blocksInRange = new();
     public override void ActivateGadget(int mouseButton)
     {

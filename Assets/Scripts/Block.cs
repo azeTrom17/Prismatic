@@ -2,20 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static UnityEngine.RuleTile.TilingRuleOutput;
-using static UnityEngine.UI.Image;
 
 public class Block : MonoBehaviour
 {
-    //4 steps:
-    //1. At game start, get all connected blocks and fasten them. (what's the original?)
-
-    //2. When piston/hinge demands it, blocks must get all connected and fastened blocks
-    //3. Then, those blocks must check to see if they can move to the target position
-    //4. Finally, if the blocks can move, they lerp to the position. Else, error
-
-
-
     [NonSerialized] public int blockNumber; //read by other blocks
     public static int nextAvailableBlockNumber = 0; //only accessed by other blocks
 
@@ -67,8 +56,9 @@ public class Block : MonoBehaviour
         return nearbyBlocks;
     }
 
-    protected Block[] OrganizedBlocks(Block block1, Block block2) //organizes two blocks by blockNumber (places lower number first)
+    protected Block[] OrganizedBlocks(Block block1, Block block2) //only used by other helper methods
     {
+        //organize the blocks by blockNumber (place lower number first)
         Block[] organizedBlocks = new Block[2];
         organizedBlocks[0] = block1.blockNumber < block2.blockNumber ? block1 : block2;
         organizedBlocks[1] = organizedBlocks[0] == block1 ? block2 : block1;
@@ -77,24 +67,27 @@ public class Block : MonoBehaviour
 
     protected string GetFastenerKey(Block block1, Block block2)
     {
-        return block1.blockNumber + "x" + block2.blockNumber;
+        Block[] blocks = OrganizedBlocks(block1, block2); //organize by blockNumber, lowest first
+        return blocks[0].blockNumber + "x" + blocks[1].blockNumber;
     }
 
-    protected void CreateFastener(string key, Block lowerBlock, Block higherBlock, bool createIcon)
+    protected void CreateFastener(string key, Block block1, Block block2, bool createIcon)
     {
+        Block[] blocks = OrganizedBlocks(block1, block2); //organize by blockNumber, lowest first
+
         GameObject fastenerIcon = null;
         if (createIcon) //piston bodies are fastened to arms but don't have icons
         {
             fastenerIcon = objectPool.GetPooledFastener();
             fastenerIcon.transform.SetParent(transform);
-            fastenerIcon.transform.position = (lowerBlock.transform.position + higherBlock.transform.position) / 2; //midpoint
+            fastenerIcon.transform.position = (blocks[0].transform.position + blocks[1].transform.position) / 2; //midpoint
             fastenerIcon.SetActive(true);
         }
 
         BlockFastener blockFastener = new()
         {
-            lowerBlock = lowerBlock,
-            higherBlock = higherBlock,
+            lowerBlock = blocks[0],
+            higherBlock = blocks[1],
             fastenerIcon = fastenerIcon
         };
 
@@ -122,13 +115,9 @@ public class Block : MonoBehaviour
         {
             if (neighbor == null) continue;
 
-            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber, lowest first
-
-            string key = GetFastenerKey(blocks[0], blocks[1]);
-
-            if (fasteners.ContainsKey(key)) continue;
-
-            CreateFastener(key, blocks[0], blocks[1], true);
+            string key = GetFastenerKey(this, neighbor);
+            if (!fasteners.ContainsKey(key))
+                CreateFastener(key, this, neighbor, true);
         }
     }
 
@@ -143,12 +132,13 @@ public class Block : MonoBehaviour
 
             if (piston.ContainsMovingBlock(neighbor)) continue;
 
-            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber, lowest first
-            string key = GetFastenerKey(blocks[0], blocks[1]);
+            string key = GetFastenerKey(this, neighbor);
             bool neighborIsFastened = fasteners.ContainsKey(key);
 
             Vector2 neighborDirection = (neighbor.transform.position - transform.position).normalized;
             bool neighborIsInFront = neighborDirection == (Vector2)piston.transform.up;
+            if (this == piston)
+                neighborIsInFront = false; //if this is piston, piston is grappling, and so arm is in front
 
             if (!neighborIsFastened && !neighborIsInFront) continue; //neighbor must be either fastened or in front
 
@@ -157,7 +147,7 @@ public class Block : MonoBehaviour
             {
                 piston.error = true;
                 piston.checkingBlocks -= 1;
-                piston.Move();
+                piston.ReadyForAction();
                 return;
             }
 
@@ -167,7 +157,7 @@ public class Block : MonoBehaviour
         }
 
         piston.checkingBlocks -= 1;
-        piston.Move(); //will fail to move if checkingBlocks is not yet 0
+        piston.ReadyForAction(); //will fail to move if checkingBlocks is not yet 0
     }
 
     public void DestroyBlock() //called by Bomb
@@ -176,8 +166,7 @@ public class Block : MonoBehaviour
         {
             if (neighbor == null) continue;
 
-            Block[] blocks = OrganizedBlocks(this, neighbor); //organize by blockNumber, lowest first
-            string key = GetFastenerKey(blocks[0], blocks[1]);
+            string key = GetFastenerKey(this, neighbor);
             if (fasteners.ContainsKey(key))
                 DestroyFastener(key);
         }

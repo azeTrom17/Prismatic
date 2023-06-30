@@ -10,6 +10,5 @@ public class PistonArm : Block
 
         blockNumber = nextAvailableBlockNumber;
         nextAvailableBlockNumber++;
-        gameObject.SetActive(false);
     }
 }
